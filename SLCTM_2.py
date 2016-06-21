@@ -8,56 +8,6 @@ import math
 import sys
 import numpy as np
 
-#Julia:
-#import julia
-#j = julia.Julia()
-#j.call("include("occultquad.jl")")
-
-#Take Arguments:
-try:
-    arg_ofilename = str(sys.argv[1])
-except:
-    arg_ofilename = ''
-try:
-    arg_numtrans = int(sys.argv[2])
-except:
-    arg_numtrans = 0
-try:
-    arg_t0 = float(sys.argv[3])
-except:
-    arg_t0 = 0
-try:
-    arg_c1 = float(sys.argv[4])
-except:
-    arg_c1 = 0
-try:
-    arg_c2 = float(sys.argv[5])
-except:
-    arg_c2 = 0
-try:
-    arg_porb = float(sys.argv[6])
-except:
-    arg_porb = 0
-try:
-    arg_pttv = float(sys.argv[7])
-except:
-    arg_pttv = 0
-try:
-    arg_noisett_e = float(sys.argv[8])
-except:
-    arg_noisett_e = 0.0
-try:
-    arg_b = float(sys.argv[9])
-except:
-    arg_b = 0.0
-try:
-    arg_vtan = float(sys.argv[10])
-except:
-    arg_vtan = 0.0
-try:
-    arg_noisef_e = float(sys.argv[11])
-except:
-    arg_noisef_e = 0.0
 
 #############################################
 #Classes and Functions
@@ -106,8 +56,62 @@ class SLCTM:
             ofile.write(str(self.normfluxes[i]) + '\n')
         ofile.close()
 
-#############################################
-Test Output
+
+
+
+
+##########################################################################################
+#####TESTING##############################################################################
+
+#Take Arguments:
+try:
+    arg_ofilename = str(sys.argv[1])
+except:
+    arg_ofilename = ''
+try:
+    arg_numtrans = int(sys.argv[2])
+except:
+    arg_numtrans = 0
+try:
+    arg_t0 = float(sys.argv[3])
+except:
+    arg_t0 = 0
+try:
+    arg_c1 = float(sys.argv[4])
+except:
+    arg_c1 = 0
+try:
+    arg_c2 = float(sys.argv[5])
+except:
+    arg_c2 = 0
+try:
+    arg_porb = float(sys.argv[6])
+except:
+    arg_porb = 0
+try:
+    arg_pttv = float(sys.argv[7])
+except:
+    arg_pttv = 0
+try:
+    arg_noisett_e = float(sys.argv[8])
+except:
+    arg_noisett_e = 0.0
+try:
+    arg_b = float(sys.argv[9])
+except:
+    arg_b = 0.0
+try:
+    arg_vtan = float(sys.argv[10])
+except:
+    arg_vtan = 0.0
+try:
+    arg_noisef_e = float(sys.argv[11])
+except:
+    arg_noisef_e = 0.0
+
+
+
+#Test Output
 if (arg_ofilename == 'h' or arg_ofilename == ''):
     print('SLCTM: Simple Light Curve Transit Model:')
     print('Outputs files with transit times and fluxes.')
