@@ -36,11 +36,20 @@ class SLCTM:
 
         #Data Arrays:
         self.transtimes = []        #Transit Times
-        self.transitStartIndex = [] #Start array index of ith transit
-        self.transitEndIndex = []   #End array index of ith transit
         self.fluxtimes = []              #Timestamp of Flux Datapoint
         self.fluxes = []              #Flux Datapoint
         self.normfluxes = []          #Normalized Flux Datapoint
+        self.transitStartIndex = [] #Start array index of ith transit
+        self.transitEndIndex = []   #End array index of ith transit
+
+        #Eventual Multiplanet Support Requires:
+        #self.transitWhichPlanet = [] #Which Planet is transiting
+        #self.porb = []
+        #self.pttv = []
+        #self.c1 = []
+        #self.c2 = []
+        #self.b = []
+        #self. vtan = []
 
     def SetModelParams(self,t0,c1,c2,porb,pttv,noisett_e,b,vtan,noisef_e):
         self.t0 = t0
@@ -62,7 +71,7 @@ class SLCTM:
         BatmanParams.ecc = ecc
         BatmanParams.w = w
         BatmanParams.u = [u1, u2]
-        #Set to Quadratic Limb Darkening
+        #Set to Quadratic Limb Darkening - Possibly open to change?
         BatmanParams.limb_dark = "quadratic"
 
     def test_PopTransTimes(self,n):
@@ -89,16 +98,16 @@ class SLCTM:
             else:
                 self.transitStartIndex.append(len(self.fluxtimes) - 1)
 
-            #Set t0:
+            #Set t0 for this transit:
             BatmanParams.t0 = self.transtimes[i]
-            #Interval for Batman Calculations:
-            self.__BMFluxTimes = np.linspace(self.transtimes[i] - self.__HalfTransitTime, self.transtimes[i] + self.__HalfTransitTime, NFluxPoints)
-            #append times to fluxtimes
+            self.__BMFluxTimes = np.linspace(self.transtimes[i] - self.__HalfTransitTime, self.transtimes[i] + self.__HalfTransitTime, NFluxPoints) #Temporary array of times for computation
+            #append times to master flux times:
             self.fluxtimes.extend(self.__BMFluxTimes)
 
-            #batman model:
+            #Initialize Batman model, compute fluxes for above interval:
             bmmodel = batman.TransitModel(BatmanParams,self.__BMFluxTimes)
-            self.__BMFluxes = bmmodel.light_curve(BatmanParams)
+            self.__BMFluxes = bmmodel.light_curve(BatmanParams) #Temporary flux array
+            #Append new fluxes to master flux array:
             self.fluxes.extend(self.__BMFluxes)
 
             #Write End Index:
