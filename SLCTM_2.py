@@ -7,7 +7,17 @@ import sys
 import numpy as np
 import batman #Limb Darkening Model from
               #http://astro.uchicago.edu/~kreidberg/batman/quickstart.html
-
+#######################
+#Things to Do:
+#o Implement Error on fluxes
+#o Multiplanet (vectorize Porb,...)
+#o Check Validity of Noise on Light Curve
+#o Named Parameters (take vector/dictionary)
+#o Possibly adaptively assign # of datapoints to a transit (save RAM)
+#  s.t. time between points << transit duration
+#o Remove member (test) functions, create 'regular' functions
+#  that take SLCTM as input
+#######################
 
 #############################################
 class SLCTM:
@@ -64,9 +74,6 @@ class SLCTM:
     def test_PopFluxesNaive(self,BatmanParams,NFluxPoints):
         #Populates fluxes for each transit.
         #Naive - uses length of transit in plane ( inc = 0 deg )
-        ##To Do##
-        #Generate times to calculate model around: (self.time[]):
-        #Run Batman around each elem of transtimes with model params bmparams
 
         #Flux Times for This transit:
         #Calculate Interval duration:
@@ -93,12 +100,19 @@ class SLCTM:
             bmmodel = batman.TransitModel(BatmanParams,self.__BMFluxTimes)
             self.__BMFluxes = bmmodel.light_curve(BatmanParams)
             self.fluxes.extend(self.__BMFluxes)
-            print self.__BMFluxes
+
             #Write End Index:
             if len(self.fluxtimes) == 0:
                 self.transitEndIndex.append(0)
             else:
                 self.transitEndIndex.append(len(self.fluxtimes) - 1)
+
+        #Apply Noise to Fluxes
+        for i in range(0,len(self.fluxes)):
+            self.fluxes[i] = self.fluxes[i] + np.random.normal(0,1)*self.noisef_e
+        #Renormalize after noise:
+        self.normfluxes = np.divide(self.fluxes,np.amax(self.fluxes))
+        self.fluxes = self.normfluxes
 
     #def normalize_fluxes(self):
         ##To Do##
@@ -124,7 +138,7 @@ class SLCTM:
 
 OutputSLCTM = SLCTM()
 bmparams = batman.TransitParams()
-OutputSLCTM.SetModelParams(0.0,2.2,2.3,20.0,0.01,0.2,100.0,2000.0,0.2)
+OutputSLCTM.SetModelParams(0.0,2.2,2.3,20.0,0.01,0.1,100.0,2000.0,0.0002)
 OutputSLCTM.setBatmanParams(bmparams,0.0,1,0.3,15,87,0.0,90.0,0.1,0.3)
 OutputSLCTM.test_PopTransTimes(int(10))
 OutputSLCTM.test_PopFluxesNaive(bmparams,1000)
