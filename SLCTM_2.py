@@ -78,7 +78,7 @@ class SLCTM:
         #Flux Times for This transit:
         #Calculate Interval duration:
         self.__HalfTransitAngle = 2.0 * math.asin((BatmanParams.rp + 1) / (2.0 * BatmanParams.a))
-        self.__HalfTransitTime = (self.__HalfTransitAngle / (2.0 * math.pi)) * self.porb
+        self.__HalfTransitTime = 1.5*(self.__HalfTransitAngle / (2.0 * math.pi)) * self.porb
 
 
         #For ith transit, calculate fluxes using Batman
@@ -138,8 +138,8 @@ class SLCTM:
 
 OutputSLCTM = SLCTM()
 bmparams = batman.TransitParams()
-OutputSLCTM.SetModelParams(0.0,2.2,2.3,20.0,0.01,0.1,100.0,2000.0,0.0002)
-OutputSLCTM.setBatmanParams(bmparams,0.0,1,0.3,15,87,0.0,90.0,0.1,0.3)
+OutputSLCTM.SetModelParams(0.0,2.2,2.3,10.0,0.01,0.1,100.0,200.0,0.0005)
+OutputSLCTM.setBatmanParams(bmparams,0.0,10.0,0.2,12,90,0.0,90.0,0.1,0.3)
 OutputSLCTM.test_PopTransTimes(int(10))
 OutputSLCTM.test_PopFluxesNaive(bmparams,1000)
 OutputSLCTM.test_WriteTransTimes("testfile")
