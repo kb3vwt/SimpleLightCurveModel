@@ -7,6 +7,10 @@ import sys
 import numpy as np
 import batman #Limb Darkening Model from
               #http://astro.uchicago.edu/~kreidberg/batman/quickstart.html
+
+#For Testing:
+import matplotlib.pyplot as plt
+
 #######################
 #Things to Do:
 #o Implement Error on fluxes
@@ -32,15 +36,21 @@ class SLCTM:
         self.noisett_e = 0.0 #Noise factor for transit times
         self.b = 0.0         #'impact parameter' - closest to center of star, projected
         self.vtan = 0.0      #tangential velocity of planet
-        self.noisef_e = 0.0  #flux noise factor
+        #self.noisef_e = 0.0  #flux noise factor
 
         #Data Arrays:
-        self.transtimes = []        #Transit Times
-        self.fluxtimes = []              #Timestamp of Flux Datapoint
+        self.transtimes = []          #Transit Times
+        self.fluxtimes = []           #Timestamp of Flux Datapoint
+        self.noiselessfluxes = []     #Retainer for Fluxes before noise addition
         self.fluxes = []              #Flux Datapoint
         self.normfluxes = []          #Normalized Flux Datapoint
-        self.transitStartIndex = [] #Start array index of ith transit
-        self.transitEndIndex = []   #End array index of ith transit
+        self.transitStartIndex = []   #Start array index of ith transit
+        self.transitEndIndex = []     #End array index of ith transit
+        self.sigma = []               #Uncertainty (for flux) at index
+
+        #ChiSquared Test
+        self.ChiSqComp = []           #Components of ChiSq, to be summed
+        self.ChiSq = 0.0
 
         #Eventual Multiplanet Support Requires:
         #self.transitWhichPlanet = [] #Which Planet is transiting
@@ -51,7 +61,7 @@ class SLCTM:
         #self.b = []
         #self. vtan = []
 
-    def SetModelParams(self,t0,c1,c2,porb,pttv,noisett_e,b,vtan,noisef_e):
+    def SetModelParams(self,t0,c1,c2,porb,pttv,noisett_e,b,vtan):
         self.t0 = t0
         self.c1 = c1
         self.c2 = c2
@@ -60,7 +70,7 @@ class SLCTM:
         self.noisett_e = noisett_e
         self.b = b
         self.vtan = vtan
-        self.noisef_e = noisef_e
+        #self.noisef_e = noisef_e
 
     def setBatmanParams(self,BatmanParams,t0,per,rp,a,inc,ecc,w,u1,u2):
         BatmanParams.t0 = t0
@@ -116,15 +126,26 @@ class SLCTM:
             else:
                 self.transitEndIndex.append(len(self.fluxtimes) - 1)
 
+    def add_norm_lcnoise(self,lcnoise):
+        #Retain noiseless fluxes:
+        for i in range(0,len(self.fluxes)):
+            self.noiselessfluxes.append(self.fluxes[i])
+
         #Apply Noise to Fluxes
         for i in range(0,len(self.fluxes)):
-            self.fluxes[i] = self.fluxes[i] + np.random.normal(0,1)*self.noisef_e
+            self.fluxes[i] = self.fluxes[i] + np.random.normal(0,1)*lcnoise
         #Renormalize after noise:
         self.normfluxes = np.divide(self.fluxes,np.amax(self.fluxes))
         self.fluxes = self.normfluxes
 
-    #def normalize_fluxes(self):
-        ##To Do##
+        #Compute ChiSq:
+        #for i in range(0,len(self.fluxes)):
+        #    self.ChiSqComp.append((self.fluxes[i] - self.noiselessfluxes[i])**2 / (self.noiselessfluxes[i]))
+
+        self.ChiSqComp = (self.fluxes - self.noiselessfluxes)**2 / (self.noiselessfluxes)
+
+        self.ChiSq = np.sum(self.ChiSqComp)
+
     def test_WriteTransTimes(self,ofname):
         ofile = open(ofname+'_ttimes.txt','wb')
         for i in range(0,len(self.transtimes)):
@@ -143,19 +164,50 @@ class SLCTM:
 ##########################################################################################
 #####TESTING##############################################################################
 
+#Testing Single Light Curve:
 #Removed CLI argument parsing for simpler testing. Trying bogus values:
 
-OutputSLCTM = SLCTM()
+#OutputSLCTM = SLCTM()
+#bmparams = batman.TransitParams()
+#OutputSLCTM.SetModelParams(0.0,0.05,0.08,10.0,100,0.0001,100.0,200.0)
+#OutputSLCTM.setBatmanParams(bmparams,0.0,10.0,0.2,12,90,0.0,90.0,0.1,0.3)
+#OutputSLCTM.test_PopTransTimes(int(10))
+#OutputSLCTM.test_PopFluxesNaive(bmparams,1000)
+#OutputSLCTM.add_norm_lcnoise(0.0005)
+#OutputSLCTM.test_WriteTransTimes("testfile")
+#OutputSLCTM.test_WriteColsTimesFluxes("testfile")
+
+#plt.plot(OutputSLCTM.fluxtimes,OutputSLCTM.fluxes)
+#plt.show()
+
+
+#Testing Array of Light Curves with various TTV periods. Plots ChiSq(PTTV) vs PTTVs
+#TTV Periods:
+PTTV_arr = np.linspace(80,120,50)
+#ChiSq Array:
+ChiSqs = []
+#Batman Params:
 bmparams = batman.TransitParams()
-OutputSLCTM.SetModelParams(0.0,2.2,2.3,10.0,0.01,0.1,100.0,200.0,0.0005)
-OutputSLCTM.setBatmanParams(bmparams,0.0,10.0,0.2,12,90,0.0,90.0,0.1,0.3)
-OutputSLCTM.test_PopTransTimes(int(10))
-OutputSLCTM.test_PopFluxesNaive(bmparams,1000)
-OutputSLCTM.test_WriteTransTimes("testfile")
-OutputSLCTM.test_WriteColsTimesFluxes("testfile")
-#print OutputSLCTM.transitStartIndex
+#List of LCs:
+LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
+for i in range(len(PTTV_arr)):
+    LightCurves[i].SetModelParams(0.0,0.05,0.08,10.0,PTTV_arr[i],0.0001,100.0,200.0)
+    LightCurves[i].setBatmanParams(bmparams,0.0,10.0,0.2,12,90,0.0,90.0,0.1,0.3)
+    LightCurves[i].test_PopTransTimes(int(1))
+    LightCurves[i].test_PopFluxesNaive(bmparams,1000)
+    LightCurves[i].add_norm_lcnoise(0.0005)
+    ChiSqs.append(LightCurves[i].ChiSq)
 
-import matplotlib.pyplot as plt
-
-plt.plot(OutputSLCTM.fluxtimes,OutputSLCTM.fluxes)
+#Plots ChiSq(PTTV) vs PTTVs
+plt.plot(PTTV_arr,ChiSqs)
+plt.title("$\chi^2$ vs $P_{ttv}$")
+plt.xlabel("$P_{ttv}$ [Days]")
+plt.ylabel("$\chi^2$")
 plt.show()
+
+#Plots ChiSq Components of a single model against time
+#plt.plot(LightCurves[0].fluxtimes,LightCurves[0].ChiSqComp)
+#plt.title("$\chi^2$ Components vs $P_{ttv}$")
+#plt.xlabel("Time [Days]")
+#plt.ylabel("$\chi^2$ Component")
+#plt.show()
