@@ -149,8 +149,8 @@ PTTVUpperBound = 150
 PTTVSegments = 200
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
 #Orbital Periods:
-PorbLowerBound = 0.5
-PorbUpperBound = 20
+PorbLowerBound = 8
+PorbUpperBound = 12
 PorbSegments = 200
 Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
 #Interpolated Flux TimeStamps:
@@ -166,11 +166,12 @@ SLCTMInputParams = {
     'c1': 0.05,
     'c2':0.08,
     'porb':10.0,
-    'pttv': (PTTVUpperBound - PTTVLowerBound) / 2.0,
+    'pttv': (PTTVUpperBound + PTTVLowerBound) / 2.0,
     'noisett_e': 0.0001,
     'b':100.0,
     'vtan':200.0
 }
+print "PTTV of SimuData:" + str((PTTVUpperBound + PTTVLowerBound) / 2.0) + " days"
 BatmanInputParams = {
     't0': 0.0,
     'per':10.0,
@@ -228,8 +229,8 @@ for i in range(len(PTTV_arr)):
 
 #Plots ChiSq(PTTV) vs PTTVs
 plt.plot(PTTV_arr,ChiSqs)
-plt.title("$\chi^2$ vs $P_{ttv}$")
-plt.xlabel("$P_{ttv}$ [Days]")
+plt.title("$\chi^2$ vs $P_{TTV}$")
+plt.xlabel("$P_{TTV}$ [Days]")
 plt.ylabel("$\chi^2$")
 plt.show()
 
