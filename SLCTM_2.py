@@ -20,42 +20,27 @@ import matplotlib.pyplot as plt
 #  s.t. time between points << transit duration
 #######################
 
-#############################################
+#######CLASSES##########################################################################
+########################################################################################
 class SLCTM:
     def __init__(self):
         #Initialize Simple Model Parameters:
-        self.t0 = 0.0        #Time zero
-        self.c1 = 0.0        #Fit parameter
-        self.c2 = 0.0        #Fit parameter
-        self.porb = 0.0      #Period of Orbit
-        self.pttv = 0.0      #TTV Period
-        self.noisett_e = 0.0 #Noise factor for transit times
-        self.b = 0.0         #'impact parameter' - closest to center of star, projected
-        self.vtan = 0.0      #tangential velocity of planet
-
+        self.t0 = 0.0                 #Time zero
+        self.c1 = 0.0                 #Fit parameter
+        self.c2 = 0.0                 #Fit parameter
+        self.porb = 0.0               #Period of Orbit
+        self.pttv = 0.0               #TTV Period
+        self.noisett_e = 0.0          #Noise factor for transit times
+        self.b = 0.0                  #'impact parameter' - closest to center of star, projected
+        self.vtan = 0.0               #tangential velocity of planet
         #Data Arrays:
         self.transtimes = []          #Transit Times
         self.fluxtimes = []           #Timestamp of Flux Datapoint
         self.fluxes = []              #Fluxes - either a model or Simulated Data
         self.sigma = []               #Uncertainty (for flux) at index
         self.isNoisy = False          #Assigned if the model has noise added (simulated data)
-        #self.normfluxes = []          #Normalized Flux Datapoint
         self.transitStartIndex = []   #Start array index of ith transit
         self.transitEndIndex = []     #End array index of ith transit
-
-        #ChiSquared Test
-        self.ChiSq = 0.0              #Use if the model is simulated data
-
-
-        #Eventual Multiplanet Support Requires:
-        #self.transitWhichPlanet = [] #Which Planet is transiting
-        #self.porb = []
-        #self.pttv = []
-        #self.c1 = []
-        #self.c2 = []
-        #self.b = []
-        #self. vtan = []
-
     def SetModelParams(self,INDIC):
         self.t0 = INDIC['t0']
         self.c1 = INDIC['c1']
@@ -65,7 +50,6 @@ class SLCTM:
         self.noisett_e = INDIC['noisett_e']
         self.b = INDIC['b']
         self.vtan = INDIC['vtan']
-
     def setBatmanParams(self,BatmanParams,BMIn):
         BatmanParams.t0 = BMIn['t0']
         BatmanParams.per = BMIn['per']
@@ -76,10 +60,9 @@ class SLCTM:
         BatmanParams.w = BMIn['w']
         BatmanParams.u = [BMIn['u1'], BMIn['u2']]
         BatmanParams.limb_dark = "quadratic"         #Set to Quadratic Limb Darkening - Possibly open to change?
-#####FUNCTIONS########
-#####################
 
-#Populates transit time array with n transit times for an SLCTM
+#####FUNCTIONS##########################################################################
+########################################################################################
 def PopTransTimes(SLCTM,n):
     #Populates transit times array with n transits
     #according to t_i = t_0 + n*Porb + c1*sin((t_0+n*Porb)/(2pi*P_ttv)) + c2*sin((t_0+n*Porb)/(2pi*P_ttv))
@@ -93,8 +76,9 @@ def PopFluxesNaive(SLCTM,BatmanParams,NFluxPoints):
 
     #Flux Times for This transit:
     #Calculate Interval duration:
+    timefactor = 2.0 #Use 1.0 if not calculating time outside occlusion
     HalfTransitAngle = 2.0 * math.asin((BatmanParams.rp + 1) / (2.0 * BatmanParams.a))
-    HalfTransitTime = 1.5*(HalfTransitAngle / (2.0 * math.pi)) * SLCTM.porb
+    HalfTransitTime = timefactor*(HalfTransitAngle / (2.0 * math.pi)) * SLCTM.porb
 
 
     #For ith transit, calculate fluxes using Batman
@@ -136,8 +120,9 @@ def add_norm_lcnoise(SLCTM,lcnoise):
 #ASSUMPTION: Same number of points, same data range
 def ComputeChiSq(DataSLCTM,ModelSLCTM):
     ChiSqComp = []
-    for ii in range(len(DataSLCTM.fluxes)):
-        ChiSqComp.append((DataSLCTM.fluxes[ii] - ModelSLCTM.fluxes[ii])**2 / (ModelSLCTM.fluxes[ii]))
+    #for ii in range(len(DataSLCTM.fluxes)):
+    #    ChiSqComp.append((DataSLCTM.fluxes[ii] - ModelSLCTM.fluxes[ii])**2 / (ModelSLCTM.fluxes[ii]))
+    ChiSqComp = (DataSLCTM.fluxes - ModelSLCTM.fluxes)**2 / (ModelSLCTM.fluxes)
     if DataSLCTM.isNoisy == False:
         print "WARNING: Simulated Data does not have Flux Noise!"
     return np.sum(ChiSqComp)
@@ -156,6 +141,12 @@ PTTVLowerBound = 50
 PTTVUpperBound = 150
 PTTVSegments = 200
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
+#Orbital Periods:
+PorbLowerBound = 0.5
+PorbUpperBound = 20
+PorbSegments = 200
+Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
+
 
 #SLCTM / Batman Initial Params:
 SLCTMInputParams = {
@@ -181,7 +172,6 @@ BatmanInputParams = {
 }
 
 
-
 #Batman Params:
 bmparams = batman.TransitParams()
 #SIMULATED DATA, with PTTV somewhere in middle of PTTV bounds:
@@ -192,31 +182,52 @@ PopTransTimes(DataLightCurve,int(10))
 PopFluxesNaive(DataLightCurve,bmparams,500)
 add_norm_lcnoise(DataLightCurve,0.005)
 
-#Plots ChiSq(PTTV) vs PTTVs
-plt.plot(DataLightCurve.fluxtimes,DataLightCurve.fluxes)
-plt.title("Simulated Data Light Curve")
-plt.xlabel("Time [Days]")
-plt.ylabel("Normalized Flux")
-plt.show()
-
 ChiSqs = []
 
+
+
 #Compute Models:
-#List of LC Models:
-LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
-for i in range(len(PTTV_arr)):
-    SLCTMInputParams['pttv'] = PTTV_arr[i]
+#List of LC Models (Vary PTTV):
+#LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
+#for i in range(len(PTTV_arr)):
+#    SLCTMInputParams['pttv'] = PTTV_arr[i]
+#    LightCurves[i].SetModelParams(SLCTMInputParams)
+#    LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
+#    PopTransTimes(LightCurves[i],int(10))
+#    PopFluxesNaive(LightCurves[i],bmparams,500)
+#    #Compute ChiSqs for each model:
+#    ChiSqs.append(ComputeChiSq(DataLightCurve,LightCurves[i]))
+
+#List of LC Models (Vary Porb):
+LightCurves = [SLCTM() for i in range(len(Porb_arr))]
+for i in range(len(Porb_arr)):
+    SLCTMInputParams['porb'] = Porb_arr[i]
+    BatmanInputParams['per'] = Porb_arr[i]
     LightCurves[i].SetModelParams(SLCTMInputParams)
     LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
     PopTransTimes(LightCurves[i],int(10))
     PopFluxesNaive(LightCurves[i],bmparams,500)
-    #Compute ChiSqs for each model:
+    #Compute ChiSqs for each model: #PROBLEM: Lines up with flux point index, NOT time index
     ChiSqs.append(ComputeChiSq(DataLightCurve,LightCurves[i]))
 
 
 #Plots ChiSq(PTTV) vs PTTVs
-plt.plot(PTTV_arr,ChiSqs)
+plt.plot(Porb_arr,ChiSqs)
 plt.title("$\chi^2$ vs $P_{ttv}$")
 plt.xlabel("$P_{ttv}$ [Days]")
 plt.ylabel("$\chi^2$")
 plt.show()
+
+plt.plot(LightCurves[2].fluxtimes,LightCurves[2].fluxes)
+plt.title("Model Light Curve")
+plt.xlabel("Time [Days]")
+plt.ylabel("Normalized Flux")
+plt.show()
+
+plt.plot(LightCurves[100].fluxtimes,LightCurves[100].fluxes)
+plt.title("Model Light Curve")
+plt.xlabel("Time [Days]")
+plt.ylabel("Normalized Flux")
+plt.show()
+
+print Porb_arr
