@@ -37,6 +37,8 @@ class SLCTM:
         self.transtimes = []          #Transit Times
         self.fluxtimes = []           #Timestamp of Flux Datapoint
         self.fluxes = []              #Fluxes - either a model or Simulated Data
+        self.interpfluxtimes = []     #Interpolated Flux Timestamps
+        self.interpfluxes = []        #Interpolated Fluxes
         self.sigma = []               #Uncertainty (for flux) at index
         self.isNoisy = False          #Assigned if the model has noise added (simulated data)
         self.transitStartIndex = []   #Start array index of ith transit
@@ -116,16 +118,21 @@ def add_norm_lcnoise(SLCTM,lcnoise):
     #Renormalize after noise:
     SLCTM.fluxes = np.divide(SLCTM.fluxes,np.amax(SLCTM.fluxes))
 
-#Returns ChiSquared for a given set of data and a model.
+#Returns ChiSquared for a given set of data and a model, both interpolated.
 #ASSUMPTION: Same number of points, same data range
-def ComputeChiSq(DataSLCTM,ModelSLCTM):
+def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
     ChiSqComp = []
     #for ii in range(len(DataSLCTM.fluxes)):
     #    ChiSqComp.append((DataSLCTM.fluxes[ii] - ModelSLCTM.fluxes[ii])**2 / (ModelSLCTM.fluxes[ii]))
-    ChiSqComp = (DataSLCTM.fluxes - ModelSLCTM.fluxes)**2 / (ModelSLCTM.fluxes)
+    ChiSqComp = (DataSLCTM.interpfluxes - ModelSLCTM.interpfluxes)**2 / (ModelSLCTM.interpfluxes)
     if DataSLCTM.isNoisy == False:
         print "WARNING: Simulated Data does not have Flux Noise!"
     return np.sum(ChiSqComp)
+
+def InterpolateSLCTM(SLCTM,InterpolatedTimes):
+    #Takes array of interpolated times, interpolates, saves to SLCTM object
+    SLCTM.interpfluxes = np.interp(InterpolatedTimes,SLCTM.fluxtimes,SLCTM.fluxes)
+    SLCTM.interpfluxtimes = InterpolatedTimes
 
 
 
@@ -146,6 +153,11 @@ PorbLowerBound = 0.5
 PorbUpperBound = 20
 PorbSegments = 200
 Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
+#Interpolated Flux TimeStamps:
+FTimeLow = 0
+FTimeHigh= 100
+FTimeSegments=1000000
+InterpFluxTimes = np.linspace(FTimeLow,FTimeHigh,FTimeSegments)
 
 
 #SLCTM / Batman Initial Params:
@@ -181,6 +193,7 @@ DataLightCurve.setBatmanParams(bmparams,BatmanInputParams)
 PopTransTimes(DataLightCurve,int(10))
 PopFluxesNaive(DataLightCurve,bmparams,500)
 add_norm_lcnoise(DataLightCurve,0.005)
+InterpolateSLCTM(DataLightCurve,InterpFluxTimes)
 
 ChiSqs = []
 
@@ -188,46 +201,48 @@ ChiSqs = []
 
 #Compute Models:
 #List of LC Models (Vary PTTV):
-#LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
-#for i in range(len(PTTV_arr)):
-#    SLCTMInputParams['pttv'] = PTTV_arr[i]
-#    LightCurves[i].SetModelParams(SLCTMInputParams)
-#    LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
-#    PopTransTimes(LightCurves[i],int(10))
-#    PopFluxesNaive(LightCurves[i],bmparams,500)
-#    #Compute ChiSqs for each model:
-#    ChiSqs.append(ComputeChiSq(DataLightCurve,LightCurves[i]))
-
-#List of LC Models (Vary Porb):
-LightCurves = [SLCTM() for i in range(len(Porb_arr))]
-for i in range(len(Porb_arr)):
-    SLCTMInputParams['porb'] = Porb_arr[i]
-    BatmanInputParams['per'] = Porb_arr[i]
+LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
+for i in range(len(PTTV_arr)):
+    SLCTMInputParams['pttv'] = PTTV_arr[i]
     LightCurves[i].SetModelParams(SLCTMInputParams)
     LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
     PopTransTimes(LightCurves[i],int(10))
     PopFluxesNaive(LightCurves[i],bmparams,500)
+    InterpolateSLCTM(LightCurves[i],InterpFluxTimes)
     #Compute ChiSqs for each model: #PROBLEM: Lines up with flux point index, NOT time index
-    ChiSqs.append(ComputeChiSq(DataLightCurve,LightCurves[i]))
+    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
+
+#List of LC Models (Vary Porb):
+#LightCurves = [SLCTM() for i in range(len(Porb_arr))]
+#for i in range(len(Porb_arr)):
+#    SLCTMInputParams['porb'] = Porb_arr[i]
+#    BatmanInputParams['per'] = Porb_arr[i]
+#    LightCurves[i].SetModelParams(SLCTMInputParams)
+#    LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
+#    PopTransTimes(LightCurves[i],int(10))
+#    PopFluxesNaive(LightCurves[i],bmparams,500)
+#    InterpolateSLCTM(LightCurves[i],InterpFluxTimes)
+#    #Compute ChiSqs for each model: #PROBLEM: Lines up with flux point index, NOT time index
+#    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
 
 
 #Plots ChiSq(PTTV) vs PTTVs
-plt.plot(Porb_arr,ChiSqs)
+plt.plot(PTTV_arr,ChiSqs)
 plt.title("$\chi^2$ vs $P_{ttv}$")
 plt.xlabel("$P_{ttv}$ [Days]")
 plt.ylabel("$\chi^2$")
 plt.show()
 
-plt.plot(LightCurves[2].fluxtimes,LightCurves[2].fluxes)
-plt.title("Model Light Curve")
-plt.xlabel("Time [Days]")
-plt.ylabel("Normalized Flux")
-plt.show()
+#plt.plot(LightCurves[2].interpfluxtimes,LightCurves[2].interpfluxes)
+#plt.title("Model Light Curve")
+#plt.xlabel("Time [Days]")
+#plt.ylabel("Normalized Flux")
+#plt.show()
 
-plt.plot(LightCurves[100].fluxtimes,LightCurves[100].fluxes)
-plt.title("Model Light Curve")
-plt.xlabel("Time [Days]")
-plt.ylabel("Normalized Flux")
-plt.show()
+#plt.plot(LightCurves[100].interpfluxtimes,LightCurves[100].interpfluxes)
+#plt.title("Model Light Curve")
+#plt.xlabel("Time [Days]")
+#plt.ylabel("Normalized Flux")
+#plt.show()
 
-print Porb_arr
+#print Porb_arr
