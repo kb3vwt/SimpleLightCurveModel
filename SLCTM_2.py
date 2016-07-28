@@ -103,26 +103,23 @@ def PopFluxesNaive_Data(SLCTM,BatmanParams,NFluxPoints):
     HalfTransitAngle = 2.0 * math.asin((BatmanParams.rp + 1) / (2.0 * BatmanParams.a))
     HalfTransitTime = TIMEFACTOR*(HalfTransitAngle / (2.0 * math.pi)) * SLCTM.porb
 
-
-    #For ith transit, calculate fluxes using Batman
+    #Do for each transit...
     for i in range(0,SLCTM.NTransits):
+
         #Write Start Index:
         if len(SLCTM.fluxTimes) == 0:
             SLCTM.transitStartIndex.append(0)
         else:
             SLCTM.transitStartIndex.append(len(SLCTM.fluxTimes) - 1)
 
-        #Set t0 for this transit:
-        BatmanParams.t0 = SLCTM.transTimes[i]
+        #For ith transit, calculate fluxes using Batman
+        BatmanParams.t0 = SLCTM.transTimes[i]                   #Set t0 for this transit:
         BMfluxTimes = np.linspace(SLCTM.transTimes[i] - HalfTransitTime, SLCTM.transTimes[i] + HalfTransitTime, NFluxPoints) #Temporary array of times for computation
-        #append times to master flux times:
-        SLCTM.fluxTimes.extend(BMfluxTimes)
+        SLCTM.fluxTimes.extend(BMfluxTimes)                     #append times to master flux times:
+        bmmodel = batman.TransitModel(BatmanParams,BMfluxTimes) #Initialize Batman model, compute fluxes for above interval
+        BMFluxes = bmmodel.light_curve(BatmanParams)            #Temporary flux array
+        SLCTM.fluxes.extend(BMFluxes)                           #Append new fluxes to master flux array:
 
-        #Initialize Batman model, compute fluxes for above interval:
-        bmmodel = batman.TransitModel(BatmanParams,BMfluxTimes)
-        BMFluxes = bmmodel.light_curve(BatmanParams) #Temporary flux array
-        #Append new fluxes to master flux array:
-        SLCTM.fluxes.extend(BMFluxes)
 
         #Write End Index:
         if len(SLCTM.fluxTimes) == 0:
@@ -142,21 +139,15 @@ def PopFluxesNaive_Model(MSLCTM,DSLCTM,BatmanParams):
 
     #Flux Times for This transit:
     #For ith transit, calculate fluxes using Batman
-    for i in range(0,MSLCTM.NTransits):
-
-        #Set t0 for this transit:
-        BatmanParams.t0 = MSLCTM.transTimes[i]
+    for i in range(MSLCTM.NTransits):
+        BatmanParams.t0 = MSLCTM.transTimes[i] #Set t0 for this transit:
         BMfluxTimes = DSLCTM.fluxTimes[DSLCTM.transitStartIndex[i]:DSLCTM.transitEndIndex[i]] #Temporary array of times for computation
-        #append times to master flux times:
-        MSLCTM.fluxTimes.extend(BMfluxTimes)
-        #Initialize Batman model, compute fluxes for above interval:
-        print "On Model " + str(MSLCTM.modelnumber) + ", " + str(i) + "th transit."
-        bmmodel = batman.TransitModel(BatmanParams,BMfluxTimes)
-        print "  ...Batman Model Initialized."
-        BMFluxes = bmmodel.light_curve(BatmanParams) #Temporary flux array
-        print "  ...Batman Light Curve Calculated."
-        #Append new fluxes to master flux array:
-        MSLCTM.fluxes.extend(BMFluxes)
+        MSLCTM.fluxTimes.extend(BMfluxTimes)   #append times to master flux times:
+        BMfluxTimes = np.asarray(BMfluxTimes)  #Convert Flux Times to ndarray from list.
+        bmmodel = batman.TransitModel(BatmanParams,BMfluxTimes)  #Initialize Batman model, compute fluxes for above interval
+        BMFluxes = bmmodel.light_curve(BatmanParams)             #Temporary flux array
+        MSLCTM.fluxes.extend(BMFluxes)                           #Append new fluxes to master flux array:
+
 
 
 def Add_Norm_LCnoise(SLCTM,lcnoise):
@@ -172,11 +163,10 @@ def Add_Norm_LCnoise(SLCTM,lcnoise):
 #ASSUMPTION: Same number of points, same data range
 def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
     ChiSqComp = []
-    #for ii in range(len(DataSLCTM.fluxes)):
-    #    ChiSqComp.append((DataSLCTM.fluxes[ii] - ModelSLCTM.fluxes[ii])**2 / (ModelSLCTM.fluxes[ii]))
-    ChiSqComp = (DataSLCTM.interpfluxes - ModelSLCTM.interpfluxes)**2 / (ModelSLCTM.interpfluxes)
+    ChiSqComp = (DataSLCTM.fluxes - ModelSLCTM.fluxes)**2 / (ModelSLCTM.fluxes)
     if DataSLCTM.isNoisy == False:
         print "WARNING: Simulated Data does not have Flux Noise!"
+        print "         Expect Unexpected Results!!"
     return np.sum(ChiSqComp)
 
 #def InterpolateSLCTM(SLCTM,InterpolatedTimes):
@@ -280,8 +270,9 @@ for i in range(len(PTTV_arr)):
 
     PopFluxesNaive_Model(LightCurves[i],DataLightCurve,bmparams)
 
-    #Compute ChiSqs for each model: #PROBLEM: Lines up with flux point index, NOT time index
-    #ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
+    #Compute ChiSqs for each model:
+    print "data length: " + str(len(DataLightCurve.fluxes)) + ";   Model 0 Length: " + str(len(LightCurves[0].fluxes))
+    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
 
 
 #print LightCurves[1].transitStartIndex[3]
@@ -290,11 +281,11 @@ for i in range(len(PTTV_arr)):
 
 
 #Plots ChiSq(PTTV) vs PTTVs
-#plt.plot(PTTV_arr,ChiSqs)
-#plt.title("$\chi^2$ vs $P_{TTV}$")
-#plt.xlabel("$P_{TTV}$ [Days]")
-#plt.ylabel("$\chi^2$")
-#plt.show()
+plt.plot(PTTV_arr,ChiSqs)
+plt.title("$\chi^2$ vs $P_{TTV}$")
+plt.xlabel("$P_{TTV}$ [Days]")
+plt.ylabel("$\chi^2$")
+plt.show()
 
 #plt.plot(LightCurves[2].fluxTimes,LightCurves[2].fluxes)
 #plt.title("Model Light Curve")
