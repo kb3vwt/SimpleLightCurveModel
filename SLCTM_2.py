@@ -120,6 +120,8 @@ def PopFluxesNaive_Data(SLCTM,BatmanParams,NFluxPoints):
         BMFluxes = bmmodel.light_curve(BatmanParams)            #Temporary flux array
         SLCTM.fluxes.extend(BMFluxes)                           #Append new fluxes to master flux array:
 
+        #print "Data, T: "+str(i)+" Flux Times... LEN:" + str(len(BMfluxTimes))
+        #print BMfluxTimes
 
         #Write End Index:
         if len(SLCTM.fluxTimes) == 0:
@@ -135,18 +137,26 @@ def PopFluxesNaive_Model(MSLCTM,DSLCTM,BatmanParams):
 
     #Copy Start/End Times for Transits:
     MSLCTM.transitStartIndex = DSLCTM.transitStartIndex
-    MSLCTM.transitEndIndex = DSLCTM.transitEndIndex
+    MSLCTM.transitEndIndex = DSLCTM.transitEndIndex #End Indices minus 1
 
     #Flux Times for This transit:
     #For ith transit, calculate fluxes using Batman
     for i in range(MSLCTM.NTransits):
         BatmanParams.t0 = MSLCTM.transTimes[i] #Set t0 for this transit:
-        BMfluxTimes = DSLCTM.fluxTimes[DSLCTM.transitStartIndex[i]:DSLCTM.transitEndIndex[i]] #Temporary array of times for computation
+        ThisTransitStart = DSLCTM.transitStartIndex[i]
+        ThisTransitEnd   = DSLCTM.transitEndIndex[i]
+        if i != 0:
+            ThisTransitStart = ThisTransitStart + 1
+        ThisTransitEnd = ThisTransitEnd + 1
+        BMfluxTimes = DSLCTM.fluxTimes[ThisTransitStart:ThisTransitEnd] #Temporary array of times for computation
         MSLCTM.fluxTimes.extend(BMfluxTimes)   #append times to master flux times:
         BMfluxTimes = np.asarray(BMfluxTimes)  #Convert Flux Times to ndarray from list.
         bmmodel = batman.TransitModel(BatmanParams,BMfluxTimes)  #Initialize Batman model, compute fluxes for above interval
         BMFluxes = bmmodel.light_curve(BatmanParams)             #Temporary flux array
         MSLCTM.fluxes.extend(BMFluxes)                           #Append new fluxes to master flux array:
+
+        #print "M: "+str(MSLCTM.modelnumber)+" T: "+str(i)+" Flux Times... LEN:" + str(len(BMfluxTimes))
+        #print BMfluxTimes
 
 
 
@@ -163,10 +173,15 @@ def Add_Norm_LCnoise(SLCTM,lcnoise):
 #ASSUMPTION: Same number of points, same data range
 def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
     ChiSqComp = []
-    ChiSqComp = (DataSLCTM.fluxes - ModelSLCTM.fluxes)**2 / (ModelSLCTM.fluxes)
     if DataSLCTM.isNoisy == False:
         print "WARNING: Simulated Data does not have Flux Noise!"
         print "         Expect Unexpected Results!!"
+    else:
+        if len(DataSLCTM.fluxes) == len(ModelSLCTM.fluxes):
+            ChiSqComp = (DataSLCTM.fluxes - ModelSLCTM.fluxes)**2 / (ModelSLCTM.fluxes)
+        else:
+            print "ERROR: DataSLCTM / ModelSLCTM Length Mismatch!"
+            print "     --> data length: " + str(len(DataSLCTM.fluxes)) + ";   Model " + str(ModelSLCTM.modelnumber) + " Length: " + str(len(ModelSLCTM.fluxes))
     return np.sum(ChiSqComp)
 
 #def InterpolateSLCTM(SLCTM,InterpolatedTimes):
@@ -198,18 +213,13 @@ PorbLowerBound = 8
 PorbUpperBound = 12
 PorbSegments = 200
 Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
-#Interpolated Flux TimeStamps:
-FTimeLow = 0
-FTimeHigh= 100
-FTimeSegments=1000000
-InterpfluxTimes = np.linspace(FTimeLow,FTimeHigh,FTimeSegments)
 
 
 #SLCTM / Batman Initial Params:
 SLCTMInputParams = {
     't0': 0.0,
-    'c1': 0.05,
-    'c2':0.08,
+    'c1': 0.3,
+    'c2':0.01,
     'porb':10.0,
     'pttv': (PTTVUpperBound + PTTVLowerBound) / 2.0,
     'noisett_e': 0.0001,
@@ -230,7 +240,7 @@ BatmanInputParams = {
 
 #Number of Datapoints per transit:
 DATAPOINTSPERTRANSIT = 500
-NUMBEROFTRANSITS = 10
+NUMBEROFTRANSITS = 4
 
 #Batman Params:
 bmparams = batman.TransitParams()
@@ -259,21 +269,27 @@ ChiSqs = []
 #List of LC Models (Vary PTTV):
 print "MODELS: "
 LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
+modelscalculated = 0
 for i in range(len(PTTV_arr)):
     #Set model number:
     LightCurves[i].modelnumber = i
-
     SLCTMInputParams['pttv'] = PTTV_arr[i]
     LightCurves[i].SetModelParams(SLCTMInputParams)
     LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
     PopTransTimes(LightCurves[i], NUMBEROFTRANSITS)
-
     PopFluxesNaive_Model(LightCurves[i],DataLightCurve,bmparams)
-
     #Compute ChiSqs for each model:
-    print "data length: " + str(len(DataLightCurve.fluxes)) + ";   Model 0 Length: " + str(len(LightCurves[0].fluxes))
+    ComputeChiSqInter(DataLightCurve,LightCurves[i])
     ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
+    modelscalculated = modelscalculated + 1
+print "    o Ran " + str(modelscalculated) + " out of " + str(PTTVSegments) + " Models."
+#print "Model Flux Times:"
+#print LightCurves[0].fluxTimes
 
+#print "Data Flux Times:"
+#print DataLightCurve.fluxTimes
+
+#print type(DataLightCurve.transitEndIndex)
 
 #print LightCurves[1].transitStartIndex[3]
 #print LightCurves[1].transitEndIndex[3]
