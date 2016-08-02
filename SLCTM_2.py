@@ -204,10 +204,11 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
 
 #Testing Array of Light Curves with various TTV periods. Plots ChiSq(PTTV) vs PTTVs
 #TTV Periods:
-PTTVLowerBound = 50
-PTTVUpperBound = 150
+PTTVLowerBound = 20
+PTTVUpperBound = 1000
 PTTVSegments = 200
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
+PTTV_Actual = 50
 #Orbital Periods:
 PorbLowerBound = 8
 PorbUpperBound = 12
@@ -221,7 +222,7 @@ SLCTMInputParams = {
     'c1': 0.3,
     'c2':0.01,
     'porb':10.0,
-    'pttv': (PTTVUpperBound + PTTVLowerBound) / 2.0,
+    'pttv': PTTV_Actual,
     'noisett_e': 0.0001,
     'b':100.0,
     'vtan':200.0
@@ -258,7 +259,7 @@ PopFluxesNaive_Data(DataLightCurve,bmparams,DATAPOINTSPERTRANSIT)
 print "    o Fluxes Populated."
 Add_Norm_LCnoise(DataLightCurve,0.005)
 print "    o Noise Added."
-print "    o PTTV of SimuData:" + str((PTTVUpperBound + PTTVLowerBound) / 2.0) + " days"
+print "    o PTTV of SimuData:" + str(PTTV_Actual) + " days"
 print "------------------------"
 
 ChiSqs = []
@@ -267,7 +268,7 @@ ChiSqs = []
 
 #Compute Models:
 #List of LC Models (Vary PTTV):
-print "MODELS: "
+print "Modeling Progress: "
 LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
 modelscalculated = 0
 for i in range(len(PTTV_arr)):
@@ -278,30 +279,35 @@ for i in range(len(PTTV_arr)):
     LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
     PopTransTimes(LightCurves[i], NUMBEROFTRANSITS)
     PopFluxesNaive_Model(LightCurves[i],DataLightCurve,bmparams)
-    #Compute ChiSqs for each model:
-    ComputeChiSqInter(DataLightCurve,LightCurves[i])
-    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i]))
+    ComputeChiSqInter(DataLightCurve,LightCurves[i])    #Compute ChiSqs for each model:
+    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i])) #Append calculated ChiSq to master array
     modelscalculated = modelscalculated + 1
 print "    o Ran " + str(modelscalculated) + " out of " + str(PTTVSegments) + " Models."
-#print "Model Flux Times:"
-#print LightCurves[0].fluxTimes
 
-#print "Data Flux Times:"
-#print DataLightCurve.fluxTimes
 
-#print type(DataLightCurve.transitEndIndex)
 
-#print LightCurves[1].transitStartIndex[3]
-#print LightCurves[1].transitEndIndex[3]
-#print LightCurves[1].fluxTimes[LightCurves[1].transitStartIndex[3]+1:LightCurves[1].transitEndIndex[3]]
 
+
+
+
+
+
+
+print "------------------------"
+print "Output: "
+print "    o Generating ChiSq Plot..."
+print "      Min ChiSq: " + str(min(ChiSqs)) + ", Max ChiSq: " + str(max(ChiSqs)) + "."
 
 #Plots ChiSq(PTTV) vs PTTVs
-plt.plot(PTTV_arr,ChiSqs)
+plt.plot(PTTV_arr,ChiSqs, color = 'k')
+plt.axvline(x=PTTV_Actual, linewidth=1, color='r')
 plt.title("$\chi^2$ vs $P_{TTV}$")
 plt.xlabel("$P_{TTV}$ [Days]")
 plt.ylabel("$\chi^2$")
 plt.show()
+
+print "    o Closed ChiSq Plot."
+
 
 #plt.plot(LightCurves[2].fluxTimes,LightCurves[2].fluxes)
 #plt.title("Model Light Curve")
@@ -310,3 +316,6 @@ plt.show()
 #plt.show()
 
 #print Porb_arr
+
+print ""
+print ".....SLCTM Terminated....."
