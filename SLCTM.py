@@ -1,16 +1,13 @@
 #!/usr/bin/python
-
-#SLCTM: Simple Light Curve Transit Model with Quadratic Limb Darkening
-#Outputs a file with transit times with noise and a file with times and fluxes
 import math
 import sys
 import numpy as np
 import batman #Limb Darkening Model from
               #http://astro.uchicago.edu/~kreidberg/batman/quickstart.html
-
-#For Testing, can remove later:
-import matplotlib.pyplot as plt
 import emcee
+#SLCTM: Simple Light Curve Transit Model with Quadratic Limb Darkening
+#Outputs a file with transit times with noise and a file with times and fluxes
+
 
 #######################
 #Things to Do:
@@ -25,7 +22,7 @@ import emcee
 
 #######CLASSES/DATA STRUCTURES##########################################################
 ########################################################################################
-class SLCTM:
+class LightCurve:
     def __init__(self):
         #Initialize Simple Model Parameters:
         self.t0 = 0.0                 #Time zero
@@ -44,8 +41,6 @@ class SLCTM:
         self.transTimes = []          #Transit Times
         self.fluxTimes = []           #Timestamp of Flux Datapoint
         self.fluxes = []              #Fluxes 1D Array - either a model or Simulated Data
-        #self.interpfluxTimes = []     #Interpolated Flux Timestamps
-        #self.interpfluxes = []        #Interpolated Fluxes
         self.sigma = []               #Uncertainty (for flux) at index
         self.isNoisy = False          #Assigned if the model has noise added (simulated data)
         self.transitStartIndex = []   #Start array index of ith transit
@@ -170,104 +165,3 @@ def LogP():
     return 0
 def RunSampler():
     return 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-##TESTS##############################################################
-#####################################################################
-
-
-#Testing Array of Light Curves with various TTV periods. Plots ChiSq(PTTV) vs PTTVs
-#TTV Periods:
-PTTVLowerBound = 0.001
-PTTVUpperBound = 100
-PTTVSegments = 1500
-PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
-PTTV_Actual = 2
-#Orbital Periods:
-PorbLowerBound = 8
-PorbUpperBound = 12
-PorbSegments = 200
-Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
-
-
-#SLCTM / Batman Initial Params:
-SLCTMInputParams = {
-    't0': 0.0,
-    'c1': 0.2,
-    'c2':0.05,
-    'porb':10.0,
-    'pttv': PTTV_Actual,
-    'noisett_e': 0.0001,
-    'b':100.0,
-    'vtan':200.0
-}
-BatmanInputParams = {
-    't0': 0.0,
-    'per':10.0,
-    'rp':0.2,
-    'a':12.0,
-    'inc':90.0,
-    'ecc':0.0,
-    'w':90.0,
-    'u1':0.1,
-    'u2':0.3
-}
-
-#Number of Datapoints per transit:
-DATAPOINTSPERTRANSIT = 500
-NUMBEROFTRANSITS = 10
-
-#Batman Params:
-bmparams = batman.TransitParams()
-#SIMULATED DATA, with PTTV somewhere in middle of PTTV bounds:
-DataLightCurve = SLCTM()
-DataLightCurve.SetModelParams(SLCTMInputParams)
-DataLightCurve.setBatmanParams(bmparams,BatmanInputParams)
-PopTransTimes(DataLightCurve,NUMBEROFTRANSITS)
-PopFluxesNaive_Data(DataLightCurve,bmparams,DATAPOINTSPERTRANSIT)
-Add_Norm_LCnoise(DataLightCurve,0.005)
-
-print "Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days. Data's PTTV is: " + str(PTTV_Actual) + " days."
-print "------------------------"
-
-
-#Compute Models:
-#List of LC Models (Vary PTTV):
-LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
-modelscalculated = 0
-ChiSqs = []
-for i in range(len(PTTV_arr)):
-    #Set model number:
-    LightCurves[i].modelnumber = i
-    SLCTMInputParams['pttv'] = PTTV_arr[i]
-    LightCurves[i].SetModelParams(SLCTMInputParams)
-    LightCurves[i].setBatmanParams(bmparams,BatmanInputParams)
-    PopTransTimes(LightCurves[i], NUMBEROFTRANSITS)
-    PopFluxesNaive_Model(LightCurves[i],DataLightCurve,bmparams)
-    ComputeChiSqInter(DataLightCurve,LightCurves[i])    #Compute ChiSqs for each model:
-    ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i])) #Append calculated ChiSq to master array
-    modelscalculated = modelscalculated + 1
-    prog = (100 * i / len(PTTV_arr)) + 1.0
-    print "Model Progress: [" + int(prog/5)*"=" + (20-int(prog/5))*" " + "] " + str(prog)+ " \r",
-print ""
-
-#Plots ChiSq(PTTV) vs PTTVs
-plt.plot(PTTV_arr,ChiSqs, color = 'k')
-plt.axvline(x=PTTV_Actual, linewidth=1, color='r')
-plt.title("$\chi^2$ vs $P_{TTV}$ for a Simulated $P_{TTV}$ = " + str(PTTV_Actual) + " days")
-plt.xlabel("$P_{TTV}$ [Days]")
-plt.ylabel("$\chi^2$")
-plt.show()
-
-print ".....SLCTM Terminated....."
