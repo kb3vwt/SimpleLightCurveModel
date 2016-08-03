@@ -10,6 +10,7 @@ import batman #Limb Darkening Model from
 
 #For Testing, can remove later:
 import matplotlib.pyplot as plt
+import emcee
 
 #######################
 #Things to Do:
@@ -20,13 +21,6 @@ import matplotlib.pyplot as plt
 #o Make Model Compute on Data's Timestamps
 #o Implement emcee model fit
 #######################
-
-
-
-
-
-
-
 
 
 #######CLASSES/DATA STRUCTURES##########################################################
@@ -75,13 +69,6 @@ class SLCTM:
         BatmanParams.w = BMIn['w']
         BatmanParams.u = [BMIn['u1'], BMIn['u2']]
         BatmanParams.limb_dark = "quadratic"         #Set to Quadratic Limb Darkening - Possibly open to change?
-
-
-
-
-
-
-
 
 #####FUNCTIONS##########################################################################
 ########################################################################################
@@ -155,11 +142,6 @@ def PopFluxesNaive_Model(MSLCTM,DSLCTM,BatmanParams):
         BMFluxes = bmmodel.light_curve(BatmanParams)             #Temporary flux array
         MSLCTM.fluxes.extend(BMFluxes)                           #Append new fluxes to master flux array:
 
-        #print "M: "+str(MSLCTM.modelnumber)+" T: "+str(i)+" Flux Times... LEN:" + str(len(BMfluxTimes))
-        #print BMfluxTimes
-
-
-
 def Add_Norm_LCnoise(SLCTM,lcnoise):
     #Note that this is simulated data:
     SLCTM.isNoisy = True
@@ -169,9 +151,9 @@ def Add_Norm_LCnoise(SLCTM,lcnoise):
     #Renormalize after noise:
     SLCTM.fluxes = np.divide(SLCTM.fluxes,np.amax(SLCTM.fluxes))
 
-#Returns ChiSquared for a given set of data and a model, both interpolated.
-#ASSUMPTION: Same number of points, same data range
 def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
+    #Returns ChiSquared for a given set of data and a model, both interpolated.
+    #ASSUMPTION: Same number of points, same data range
     ChiSqComp = []
     if DataSLCTM.isNoisy == False:
         print "WARNING: Simulated Data does not have Flux Noise!"
@@ -184,10 +166,10 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
             print "     --> data length: " + str(len(DataSLCTM.fluxes)) + ";   Model " + str(ModelSLCTM.modelnumber) + " Length: " + str(len(ModelSLCTM.fluxes))
     return np.sum(ChiSqComp)
 
-#def InterpolateSLCTM(SLCTM,InterpolatedTimes):
-#    #Takes array of interpolated times, interpolates, saves to SLCTM object
-#    SLCTM.interpfluxes = np.interp(InterpolatedTimes,SLCTM.fluxTimes,SLCTM.fluxes)
-#    SLCTM.interpfluxTimes = InterpolatedTimes
+
+
+
+
 
 
 
@@ -204,11 +186,11 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
 
 #Testing Array of Light Curves with various TTV periods. Plots ChiSq(PTTV) vs PTTVs
 #TTV Periods:
-PTTVLowerBound = 20
-PTTVUpperBound = 1000
+PTTVLowerBound = 0.01
+PTTVUpperBound = 10
 PTTVSegments = 200
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
-PTTV_Actual = 50
+PTTV_Actual = 2
 #Orbital Periods:
 PorbLowerBound = 8
 PorbUpperBound = 12
@@ -250,27 +232,19 @@ DataLightCurve = SLCTM()
 DataLightCurve.SetModelParams(SLCTMInputParams)
 DataLightCurve.setBatmanParams(bmparams,BatmanInputParams)
 PopTransTimes(DataLightCurve,NUMBEROFTRANSITS)
-print "SLCTM Test in Progress..."
-print "Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days."
-print "------------------------"
-print "Data Progress:"
-print "    o Transit Times Populated."
 PopFluxesNaive_Data(DataLightCurve,bmparams,DATAPOINTSPERTRANSIT)
-print "    o Fluxes Populated."
 Add_Norm_LCnoise(DataLightCurve,0.005)
-print "    o Noise Added."
-print "    o PTTV of SimuData:" + str(PTTV_Actual) + " days"
+
+print "Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days. Data's PTTV is: " + str(PTTV_Actual) + " days."
 print "------------------------"
-
-ChiSqs = []
-
+print ""
 
 
 #Compute Models:
 #List of LC Models (Vary PTTV):
-print "Modeling Progress: "
 LightCurves = [SLCTM() for i in range(len(PTTV_arr))]
 modelscalculated = 0
+ChiSqs = []
 for i in range(len(PTTV_arr)):
     #Set model number:
     LightCurves[i].modelnumber = i
@@ -282,40 +256,14 @@ for i in range(len(PTTV_arr)):
     ComputeChiSqInter(DataLightCurve,LightCurves[i])    #Compute ChiSqs for each model:
     ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i])) #Append calculated ChiSq to master array
     modelscalculated = modelscalculated + 1
-print "    o Ran " + str(modelscalculated) + " out of " + str(PTTVSegments) + " Models."
 
-
-
-
-
-
-
-
-
-
-print "------------------------"
-print "Output: "
-print "    o Generating ChiSq Plot..."
-print "      Min ChiSq: " + str(min(ChiSqs)) + ", Max ChiSq: " + str(max(ChiSqs)) + "."
 
 #Plots ChiSq(PTTV) vs PTTVs
 plt.plot(PTTV_arr,ChiSqs, color = 'k')
 plt.axvline(x=PTTV_Actual, linewidth=1, color='r')
-plt.title("$\chi^2$ vs $P_{TTV}$")
+plt.title("$\chi^2$ vs $P_{TTV}$ for a Simulated $P_{TTV}$ = " + str(PTTV_Actual) + " days")
 plt.xlabel("$P_{TTV}$ [Days]")
 plt.ylabel("$\chi^2$")
 plt.show()
 
-print "    o Closed ChiSq Plot."
-
-
-#plt.plot(LightCurves[2].fluxTimes,LightCurves[2].fluxes)
-#plt.title("Model Light Curve")
-#plt.xlabel("Time [Days]")
-#plt.ylabel("Normalized Flux")
-#plt.show()
-
-#print Porb_arr
-
-print ""
 print ".....SLCTM Terminated....."
