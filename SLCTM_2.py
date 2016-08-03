@@ -166,7 +166,10 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
             print "     --> data length: " + str(len(DataSLCTM.fluxes)) + ";   Model " + str(ModelSLCTM.modelnumber) + " Length: " + str(len(ModelSLCTM.fluxes))
     return np.sum(ChiSqComp)
 
-
+def LogP():
+    return 0
+def RunSampler():
+    return 0
 
 
 
@@ -188,7 +191,7 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
 #TTV Periods:
 PTTVLowerBound = 0.001
 PTTVUpperBound = 100
-PTTVSegments = 1000
+PTTVSegments = 1500
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
 PTTV_Actual = 2
 #Orbital Periods:
@@ -222,8 +225,8 @@ BatmanInputParams = {
 }
 
 #Number of Datapoints per transit:
-DATAPOINTSPERTRANSIT = 250
-NUMBEROFTRANSITS = 4
+DATAPOINTSPERTRANSIT = 500
+NUMBEROFTRANSITS = 10
 
 #Batman Params:
 bmparams = batman.TransitParams()
@@ -255,8 +258,9 @@ for i in range(len(PTTV_arr)):
     ComputeChiSqInter(DataLightCurve,LightCurves[i])    #Compute ChiSqs for each model:
     ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i])) #Append calculated ChiSq to master array
     modelscalculated = modelscalculated + 1
-    print "Model Progress: " + str((100 * i / len(PTTV_arr)) + 1) + "% \r",
-print "Model Progress: DONE"
+    prog = (100 * i / len(PTTV_arr)) + 1.0
+    print "Model Progress: [" + int(prog/5)*"=" + (20-int(prog/5))*" " + "] " + str(prog)+ " \r",
+print ""
 
 #Plots ChiSq(PTTV) vs PTTVs
 plt.plot(PTTV_arr,ChiSqs, color = 'k')
