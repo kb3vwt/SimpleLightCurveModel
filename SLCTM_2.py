@@ -186,9 +186,9 @@ def ComputeChiSqInter(DataSLCTM,ModelSLCTM):
 
 #Testing Array of Light Curves with various TTV periods. Plots ChiSq(PTTV) vs PTTVs
 #TTV Periods:
-PTTVLowerBound = 0.01
-PTTVUpperBound = 10
-PTTVSegments = 200
+PTTVLowerBound = 0.001
+PTTVUpperBound = 100
+PTTVSegments = 1000
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
 PTTV_Actual = 2
 #Orbital Periods:
@@ -201,8 +201,8 @@ Porb_arr = np.linspace(PorbLowerBound,PorbUpperBound,PorbSegments)
 #SLCTM / Batman Initial Params:
 SLCTMInputParams = {
     't0': 0.0,
-    'c1': 0.3,
-    'c2':0.01,
+    'c1': 0.2,
+    'c2':0.05,
     'porb':10.0,
     'pttv': PTTV_Actual,
     'noisett_e': 0.0001,
@@ -222,7 +222,7 @@ BatmanInputParams = {
 }
 
 #Number of Datapoints per transit:
-DATAPOINTSPERTRANSIT = 500
+DATAPOINTSPERTRANSIT = 250
 NUMBEROFTRANSITS = 4
 
 #Batman Params:
@@ -237,7 +237,6 @@ Add_Norm_LCnoise(DataLightCurve,0.005)
 
 print "Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days. Data's PTTV is: " + str(PTTV_Actual) + " days."
 print "------------------------"
-print ""
 
 
 #Compute Models:
@@ -256,7 +255,8 @@ for i in range(len(PTTV_arr)):
     ComputeChiSqInter(DataLightCurve,LightCurves[i])    #Compute ChiSqs for each model:
     ChiSqs.append(ComputeChiSqInter(DataLightCurve,LightCurves[i])) #Append calculated ChiSq to master array
     modelscalculated = modelscalculated + 1
-
+    print "Model Progress: " + str((100 * i / len(PTTV_arr)) + 1) + "% \r",
+print "Model Progress: DONE"
 
 #Plots ChiSq(PTTV) vs PTTVs
 plt.plot(PTTV_arr,ChiSqs, color = 'k')
