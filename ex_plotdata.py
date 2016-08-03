@@ -51,7 +51,10 @@ DataLightCurve.SetModelParams(SLCTMInputParams) #Set the Parameters by passing o
 DataLightCurve.setBatmanParams(bmparams,BatmanInputParams) #Set the batman parameters by passing our batman parameter dictionary.
 SLCTM.PopTransTimes(DataLightCurve,NUMBEROFTRANSITS) #Populate NUMBEROFTRANSITS transit times. This fills an array full of transit times.
 SLCTM.PopFluxesNaive_Data(DataLightCurve,bmparams,DATAPOINTSPERTRANSIT) #This populates each transit's light curve with a given number of points and generates the list of flux time points.
-SLCTM.Add_Norm_LCnoise(DataLightCurve,0.005) #This adds a simulated amount of noise to each data point. Sets LightCurve.isNoisy to true.
+print "----SLCTM emcee Test (ex_fit.py)----"
+print "  o Simulated Data Generated"
+
+SLCTM.Add_Norm_LCnoise(DataLightCurve,0.005) #This adds a simulated amount of noise to each data point. Sets LightCurve.isNoisy to true. Comment out for a pure model.
 #End of Processing Simulated Data
 
 

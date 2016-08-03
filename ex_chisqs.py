@@ -50,8 +50,8 @@ BatmanInputParams = {
 }
 
 #Optionally Print Settings to Commandline
-print "Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days. Data's PTTV is: " + str(PTTV_Actual) + " days."
-print "------------------------"
+print "----SLCTM ChiSq Test (ex_chisqs.py)----"
+print "  o Varying P_ttv. N = " + str(len(PTTV_arr)) + " samples from " + str(PTTVLowerBound) + " to " + str(PTTVUpperBound) + " days. Data's PTTV is: " + str(PTTV_Actual) + " days."
 
 bmparams = batman.TransitParams() #Initialize Batman's native parameter object.
                                   #This is used for both the simulated data and
@@ -65,6 +65,7 @@ SLCTM.PopTransTimes(DataLightCurve,NUMBEROFTRANSITS) #Populate NUMBEROFTRANSITS 
 SLCTM.PopFluxesNaive_Data(DataLightCurve,bmparams,DATAPOINTSPERTRANSIT) #This populates each transit's light curve with a given number of points and generates the list of flux time points.
 SLCTM.Add_Norm_LCnoise(DataLightCurve,0.005) #This adds a simulated amount of noise to each data point. Sets LightCurve.isNoisy to true.
 #End of Processing Simulated Data
+print "  o Simulated Data Generated"
 
 
 #Compute Models:
@@ -83,7 +84,7 @@ for i in range(len(PTTV_arr)):
 
     #Optionally print out the progress. This can take a while so it's nice to see something working.
     prog = (100 * i / len(PTTV_arr)) + 1.0
-    print "Model Progress: /" + int(prog/5)*"/" + (20-int(prog/5))*" " + "/ " + str(prog)+ "% \r",
+    print "  o Model Progress: /" + int(prog/5)*"/" + (20-int(prog/5))*" " + "/ " + str(prog)+ "% \r",
 print ""
 
 #Plots ChiSq(PTTV) vs PTTVs

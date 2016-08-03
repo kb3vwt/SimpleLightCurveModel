@@ -8,4 +8,4 @@ ex_plotdata.py -> This example showcases the production of a light curve inside 
 ex_chisqs.py -> This example showcases the production of a simulated light curve and a large number of model light curves
 varying one parameter, which then have their ChiSquareds evaluated and plotted.
 
-ex_fit.py -> This model shows the usage of emcee with SLCTM.
+ex_fit.py -> This example shows the usage of emcee with SLCTM.
