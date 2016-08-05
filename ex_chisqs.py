@@ -15,14 +15,14 @@ import SLCTM
 
 #Start Modifiable Constants for Test:
 #WARNING: Too many light curves + too many data points can crash computer.
-PTTV_Actual = 100       #Set Simulated Data's Actual PTTV
+PTTV_Actual = 80     #Set Simulated Data's Actual PTTV
 PTTVLowerBound = 1      #Lower Bound of Models
-PTTVUpperBound = 250    #Upper Bound of Models
-PTTVSegments = 1000     #Number of Model Light Curves to Calculate
+PTTVUpperBound = 200    #Upper Bound of Models
+PTTVSegments = 500     #Number of Model Light Curves to Calculate
 PTTV_arr = np.linspace(PTTVLowerBound,PTTVUpperBound,PTTVSegments)
 
-DATAPOINTSPERTRANSIT = 200 #Number of Datapoints per transit
-NUMBEROFTRANSITS = 80      #Number of Transits in Dataset / Each Model
+DATAPOINTSPERTRANSIT = 100 #Number of Datapoints per transit
+NUMBEROFTRANSITS = 50      #Number of Transits in Dataset / Each Model
 #End Modifiable Constants for Test
 
 
