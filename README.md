@@ -17,3 +17,10 @@ ex_chisqs.py -> This example showcases the production of a simulated light curve
 varying one parameter, which then have their ChiSquareds evaluated and plotted.
 
 ex_fit.py -> This example shows the usage of emcee with SLCTM.
+
+
+#Acknowledgments
+
+The SLCTM Module was started by Joseph Sheldon Jr as part of a summer project supervised by Prof. Eric B. Ford. Prof. Ford provided the initial idea and lots of advice/mentoring.
+
+Credits to Laura Kreidberg for batman and to Dan Foreman-Mackey for emcee
