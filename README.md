@@ -1,4 +1,12 @@
-# SimpleLightCurveModel
+# SLCTM: SimpleLightCurveTransitModel
+Currently, the SLCTM.LightCurve (Python 2.7) class encapsulates the orbital and transit parameters for a single planet. The class also provides storage for transit times, errors, fluxes and flux timestamps. In addition to the transit data, transit start/stop indices are saved. By importing the SLCTM module, you also gain access to a few functions that operate on a SLCTM.LightCurve object. This Readme gives some basic information on the class, with usage tips. Provided along with this documentation file are a few examples of how to use the class and the module's functions. You can find the project's github here.
+
+The batman module (Bad-Ass Transit Model Calculation), developed by Laura Kreidberg is used this within the SLCTM module to create an ensemble of different models. The SLCTM module provides some custom wrapper functions for batman, but the LightCurve class is abstract enough to be extended to take data - simulated or otherwise - from any source.
+
+The emcee module developed by Dan Foreman-Mackey is used to regress a function for the light curve
+
+
+
 File List:
 
 SLCTM.py -> Contains SLCTM Class and several useful functions that apply to it.
