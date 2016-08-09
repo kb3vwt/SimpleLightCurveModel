@@ -24,3 +24,5 @@ ex_fit.py -> This example shows the usage of emcee with SLCTM.
 The SLCTM Module was started by Joseph Sheldon Jr as part of a summer project supervised by Prof. Eric B. Ford. Prof. Ford provided the initial idea and lots of advice/mentoring.
 
 Credits to Laura Kreidberg for batman and to Dan Foreman-Mackey for emcee
+
+#Access the FULL documentation here: https://kb3vwt.github.io/SimpleLightCurveModel/
