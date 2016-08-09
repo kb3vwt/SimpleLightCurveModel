@@ -15,7 +15,6 @@ import emcee
 #o Multiplanet (vectorize Porb,...)
 #o Possibly adaptively assign # of datapoints to a transit (save RAM)
 #  s.t. time between points << transit duration
-#o Make Model Compute on Data's Timestamps
 #o Implement emcee model fit
 #######################
 
